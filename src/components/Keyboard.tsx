@@ -22,6 +22,10 @@ const SPECIAL_KEY_LABELS: Record<string, string> = {
   "!": "!",
   "&": "&",
   "|": "|",
+  "/": "/",
+  ":": ":",
+  "-": "-",
+  "#": "#",
 };
 
 export default function Keyboard({ nextChar }: { nextChar: string | null }) {

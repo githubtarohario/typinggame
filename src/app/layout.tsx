@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "タイピングゲーム",
-  description: "JavaScriptキーワードタイピング練習ゲーム",
+  description: "HTMLタグタイピング練習ゲーム",
 };
 
 export default async function RootLayout({
