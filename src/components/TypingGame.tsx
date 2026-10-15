@@ -74,28 +74,35 @@ export default function TypingGame() {
     setState("playing");
   }
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const value = e.target.value;
-    const expectedChar = currentWord[value.length - 1];
-    const typedChar = value[value.length - 1];
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    // IME変換中のキー入力は無視する(日本語入力がONのまま記号を打つとズレて
+    // フリーズしたように見えるため、変換確定前のイベントは処理しない)
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    // 文字キー以外(Shift, Backspace, 矢印キー等)は無視
+    if (e.key.length !== 1) return;
 
-    if (value.length > typedLength) {
-      if (typedChar === expectedChar) {
-        setCorrectCount((c) => c + 1);
-      } else {
-        setMissCount((m) => m + 1);
-        return; // ミス入力は反映しない(お手つき防止)
-      }
+    e.preventDefault();
+
+    const expectedChar = currentWord[typedLength];
+    if (e.key !== expectedChar) {
+      setMissCount((m) => m + 1);
+      return; // ミス入力は反映しない(お手つき防止)
     }
 
-    setTypedLength(value.length);
+    setCorrectCount((c) => c + 1);
+    const nextLength = typedLength + 1;
 
-    if (value === currentWord) {
+    if (nextLength === currentWord.length) {
       setWordsCompleted((w) => w + 1);
       setCurrentWord(pickWord(difficulty, currentWord));
       setTypedLength(0);
-      if (inputRef.current) inputRef.current.value = "";
+    } else {
+      setTypedLength(nextLength);
     }
+  }
+
+  function refocusInput() {
+    inputRef.current?.focus();
   }
 
   useEffect(() => {
@@ -206,7 +213,10 @@ export default function TypingGame() {
   const nextChar = currentWord[typedLength] ?? null;
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4">
+    <div
+      className="flex flex-1 flex-col items-center justify-center gap-8 px-4"
+      onClick={refocusInput}
+    >
       <div className="flex w-full max-w-2xl items-center justify-between text-sm text-slate-500">
         <span>難易度: {DIFFICULTY_LABELS[difficulty]}</span>
         <span>残り時間: {timeLeft}秒</span>
@@ -235,8 +245,13 @@ export default function TypingGame() {
       <input
         ref={inputRef}
         type="text"
-        value={currentWord.slice(0, typedLength)}
-        onChange={handleChange}
+        value=""
+        onChange={() => {}}
+        onKeyDown={handleKeyDown}
+        onCompositionEnd={(e) => {
+          e.currentTarget.value = "";
+        }}
+        onBlur={refocusInput}
         className="absolute h-0 w-0 opacity-0"
         autoFocus
         autoComplete="off"
