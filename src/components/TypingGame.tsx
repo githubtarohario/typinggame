@@ -11,6 +11,27 @@ import Keyboard from "@/components/Keyboard";
 
 type GameState = "select" | "playing" | "finished";
 
+const DIFFICULTY_STYLES: Record<
+  Difficulty,
+  { icon: string; gradient: string; description: string }
+> = {
+  beginner: {
+    icon: "🌱",
+    gradient: "from-emerald-400 to-emerald-600",
+    description: "基本タグを1つずつ練習",
+  },
+  intermediate: {
+    icon: "🔥",
+    gradient: "from-sky-400 to-sky-600",
+    description: "フォーム・テーブル系タグ",
+  },
+  advanced: {
+    icon: "⚡",
+    gradient: "from-violet-400 to-violet-600",
+    description: "属性つきの実用コード",
+  },
+};
+
 function pickWord(difficulty: Difficulty, exclude?: string): string {
   const words = TYPING_WORDS[difficulty];
   let word = words[Math.floor(Math.random() * words.length)];
@@ -20,6 +41,17 @@ function pickWord(difficulty: Difficulty, exclude?: string): string {
     }
   }
   return word;
+}
+
+function getResultMessage(accuracy: number, wordsCompleted: number): string {
+  if (wordsCompleted === 0) {
+    return "まずは1つクリアしてみよう!落ち着いて入力してみてください";
+  }
+  if (accuracy >= 95) return "パーフェクト!素晴らしい正確さです!";
+  if (accuracy >= 85) return "よくできました!その調子で続けよう!";
+  if (accuracy >= 70) return "なかなかいい調子!もう少しで完璧!";
+  if (accuracy >= 50) return "がんばろう!練習を続ければ上達します";
+  return "まずは正確さを意識してゆっくり入力してみよう";
 }
 
 export default function TypingGame() {
@@ -146,25 +178,44 @@ export default function TypingGame() {
 
   if (state === "select") {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
-        <h1 className="text-2xl font-bold text-slate-800">
-          難易度を選択してください
-        </h1>
-        <div className="flex gap-4">
-          {(Object.keys(DIFFICULTY_LABELS) as Difficulty[]).map((level) => (
-            <button
-              key={level}
-              onClick={() => startGame(level)}
-              className="flex w-36 flex-col items-center gap-1 rounded-lg border border-slate-300 bg-white px-6 py-5 shadow-sm hover:border-slate-500 hover:shadow-md"
-            >
-              <span className="text-lg font-bold text-slate-800">
-                {DIFFICULTY_LABELS[level]}
-              </span>
-              <span className="text-xs text-slate-500">
-                制限時間 {DIFFICULTY_TIME_LIMIT[level]}秒
-              </span>
-            </button>
-          ))}
+      <div className="flex flex-1 flex-col items-center justify-center gap-10 bg-gradient-to-b from-slate-50 to-slate-100 px-4 py-12">
+        <div className="text-center">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            HTML Typing Practice
+          </p>
+          <h1 className="text-3xl font-bold text-slate-800">
+            難易度を選択してください
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            タグを正確に、できるだけ早くタイピングしよう
+          </p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-6">
+          {(Object.keys(DIFFICULTY_LABELS) as Difficulty[]).map((level) => {
+            const style = DIFFICULTY_STYLES[level];
+            return (
+              <button
+                key={level}
+                onClick={() => startGame(level)}
+                className="group flex w-44 flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-7 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
+              >
+                <span
+                  className={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br ${style.gradient} text-2xl shadow-md transition-transform group-hover:scale-110`}
+                >
+                  {style.icon}
+                </span>
+                <span className="mt-1 text-lg font-bold text-slate-800">
+                  {DIFFICULTY_LABELS[level]}
+                </span>
+                <span className="text-xs text-slate-500">
+                  {style.description}
+                </span>
+                <span className="mt-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
+                  制限時間 {DIFFICULTY_TIME_LIMIT[level]}秒
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -174,6 +225,9 @@ export default function TypingGame() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
         <h1 className="text-2xl font-bold text-slate-800">結果</h1>
+        <p className="text-center text-lg font-semibold text-emerald-600">
+          {getResultMessage(accuracy, wordsCompleted)}
+        </p>
         <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <dl className="grid grid-cols-2 gap-y-3 text-sm">
             <dt className="text-slate-500">難易度</dt>
