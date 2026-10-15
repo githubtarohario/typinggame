@@ -1,8 +1,9 @@
-import { eq, sql, desc, avg, count } from "drizzle-orm";
+import { eq, sql, desc, avg, count, gte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, scores } from "@/lib/db/schema";
 import { DIFFICULTY_LABELS, Difficulty } from "@/data/typing-words";
 import AdminTrendChart from "@/components/AdminTrendChart";
+import DeleteByDatePanel from "@/components/DeleteByDatePanel";
 
 function toNumber(v: unknown): number {
   const n = typeof v === "string" ? parseFloat(v) : (v as number);
@@ -58,6 +59,22 @@ export default async function AdminPage() {
     .groupBy(sql`date(${scores.playedAt})`)
     .orderBy(sql`date(${scores.playedAt})`);
 
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+
+  const todayByUserRaw = await db
+    .select({
+      userId: users.id,
+      displayName: users.displayName,
+      username: users.username,
+      playCount: count(scores.id),
+    })
+    .from(users)
+    .innerJoin(scores, eq(scores.userId, users.id))
+    .where(gte(scores.playedAt, startOfToday))
+    .groupBy(users.id)
+    .orderBy(desc(count(scores.id)));
+
   const recentRows = await db
     .select({
       id: scores.id,
@@ -106,6 +123,44 @@ export default async function AdminPage() {
           日別 正解率推移(全ユーザー平均)
         </h2>
         <AdminTrendChart data={chartData} />
+      </section>
+
+      <section className="mb-8 rounded-lg border border-slate-200 bg-white shadow-sm">
+        <h2 className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600">
+          本日のユーザー別実行回数
+        </h2>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="px-4 py-2 font-medium">名前</th>
+              <th className="px-4 py-2 font-medium">ユーザID</th>
+              <th className="px-4 py-2 font-medium">本日の実行回数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {todayByUserRaw.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-4 py-8 text-center text-slate-400">
+                  本日の記録はまだありません
+                </td>
+              </tr>
+            )}
+            {todayByUserRaw.map((u) => (
+              <tr key={u.userId} className="border-b border-slate-100 last:border-0">
+                <td className="px-4 py-2">{u.displayName}</td>
+                <td className="px-4 py-2 text-slate-500">{u.username}</td>
+                <td className="px-4 py-2 font-semibold">{u.playCount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="mb-8 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="mb-2 text-sm font-semibold text-slate-600">
+          日別データ削除
+        </h2>
+        <DeleteByDatePanel />
       </section>
 
       <section className="mb-8 rounded-lg border border-slate-200 bg-white shadow-sm">
