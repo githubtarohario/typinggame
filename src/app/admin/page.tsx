@@ -132,6 +132,7 @@ export default async function AdminPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="px-4 py-2 font-medium">No.</th>
               <th className="px-4 py-2 font-medium">名前</th>
               <th className="px-4 py-2 font-medium">ユーザID</th>
               <th className="px-4 py-2 font-medium">本日の実行回数</th>
@@ -140,13 +141,14 @@ export default async function AdminPage() {
           <tbody>
             {todayByUserRaw.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
                   本日の記録はまだありません
                 </td>
               </tr>
             )}
-            {todayByUserRaw.map((u) => (
+            {todayByUserRaw.map((u, i) => (
               <tr key={u.userId} className="border-b border-slate-100 last:border-0">
+                <td className="px-4 py-2 text-slate-400">{i + 1}</td>
                 <td className="px-4 py-2">{u.displayName}</td>
                 <td className="px-4 py-2 text-slate-500">{u.username}</td>
                 <td className="px-4 py-2 font-semibold">{u.playCount}</td>
@@ -170,6 +172,7 @@ export default async function AdminPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="px-4 py-2 font-medium">No.</th>
               <th className="px-4 py-2 font-medium">難易度</th>
               <th className="px-4 py-2 font-medium">プレイ回数</th>
               <th className="px-4 py-2 font-medium">平均正解率</th>
@@ -177,8 +180,9 @@ export default async function AdminPage() {
             </tr>
           </thead>
           <tbody>
-            {byDifficultyRaw.map((d) => (
+            {byDifficultyRaw.map((d, i) => (
               <tr key={d.difficulty} className="border-b border-slate-100 last:border-0">
+                <td className="px-4 py-2 text-slate-400">{i + 1}</td>
                 <td className="px-4 py-2">{DIFFICULTY_LABELS[d.difficulty as Difficulty]}</td>
                 <td className="px-4 py-2">{d.playCount}</td>
                 <td className="px-4 py-2">{toNumber(d.avgAccuracy)}%</td>
@@ -196,6 +200,7 @@ export default async function AdminPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="px-4 py-2 font-medium">No.</th>
               <th className="px-4 py-2 font-medium">名前</th>
               <th className="px-4 py-2 font-medium">ユーザID</th>
               <th className="px-4 py-2 font-medium">プレイ回数</th>
@@ -204,8 +209,9 @@ export default async function AdminPage() {
             </tr>
           </thead>
           <tbody>
-            {byUserRaw.map((u) => (
+            {byUserRaw.map((u, i) => (
               <tr key={u.userId} className="border-b border-slate-100 last:border-0">
+                <td className="px-4 py-2 text-slate-400">{i + 1}</td>
                 <td className="px-4 py-2">{u.displayName}</td>
                 <td className="px-4 py-2 text-slate-500">{u.username}</td>
                 <td className="px-4 py-2">{u.playCount}</td>
@@ -224,6 +230,7 @@ export default async function AdminPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="px-4 py-2 font-medium">No.</th>
               <th className="px-4 py-2 font-medium">日時</th>
               <th className="px-4 py-2 font-medium">名前</th>
               <th className="px-4 py-2 font-medium">難易度</th>
@@ -234,13 +241,14 @@ export default async function AdminPage() {
           <tbody>
             {recentRows.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                   まだ記録がありません
                 </td>
               </tr>
             )}
-            {recentRows.map((r) => (
+            {recentRows.map((r, i) => (
               <tr key={r.id} className="border-b border-slate-100 last:border-0">
+                <td className="px-4 py-2 text-slate-400">{i + 1}</td>
                 <td className="px-4 py-2">{new Date(r.playedAt).toLocaleString("ja-JP")}</td>
                 <td className="px-4 py-2">{r.displayName}</td>
                 <td className="px-4 py-2">{DIFFICULTY_LABELS[r.difficulty as Difficulty]}</td>

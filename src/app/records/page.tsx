@@ -102,6 +102,7 @@ export default async function RecordsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="px-4 py-2 font-medium">No.</th>
               <th className="px-4 py-2 font-medium">日付</th>
               <th className="px-4 py-2 font-medium">名前</th>
               <th className="px-4 py-2 font-medium">難易度</th>
@@ -112,13 +113,14 @@ export default async function RecordsPage() {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                   まだ記録がありません
                 </td>
               </tr>
             )}
-            {[...rows].reverse().map((r) => (
+            {[...rows].reverse().map((r, i) => (
               <tr key={r.id} className="border-b border-slate-100 last:border-0">
+                <td className="px-4 py-2 text-slate-400">{i + 1}</td>
                 <td className="px-4 py-2">
                   {new Date(r.playedAt).toLocaleString("ja-JP")}
                 </td>
