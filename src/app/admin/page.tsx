@@ -1,9 +1,11 @@
 import { eq, sql, desc, avg, count, gte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, scores } from "@/lib/db/schema";
+import { getSession } from "@/lib/auth";
 import { DIFFICULTY_LABELS, Difficulty } from "@/data/typing-words";
 import AdminTrendChart from "@/components/AdminTrendChart";
 import DeleteByDatePanel from "@/components/DeleteByDatePanel";
+import DeleteUserButton from "@/components/DeleteUserButton";
 
 function toNumber(v: unknown): number {
   const n = typeof v === "string" ? parseFloat(v) : (v as number);
@@ -11,6 +13,7 @@ function toNumber(v: unknown): number {
 }
 
 export default async function AdminPage() {
+  const session = await getSession();
   const db = getDb();
 
   const [summary] = await db
@@ -218,6 +221,7 @@ export default async function AdminPage() {
               <th className="px-4 py-2 font-medium">プレイ回数</th>
               <th className="px-4 py-2 font-medium">平均正解率</th>
               <th className="px-4 py-2 font-medium">平均WPM</th>
+              <th className="px-4 py-2 font-medium">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -229,6 +233,13 @@ export default async function AdminPage() {
                 <td className="px-4 py-2">{u.playCount}</td>
                 <td className="px-4 py-2">{u.playCount > 0 ? `${toNumber(u.avgAccuracy)}%` : "-"}</td>
                 <td className="px-4 py-2">{u.playCount > 0 ? toNumber(u.avgWpm) : "-"}</td>
+                <td className="px-4 py-2">
+                  <DeleteUserButton
+                    userId={u.userId}
+                    displayName={u.displayName}
+                    isSelf={u.userId === session?.userId}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
