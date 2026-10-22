@@ -103,12 +103,20 @@ export default async function AdminPage() {
           <h1 className="text-2xl font-bold text-slate-800">管理者ダッシュボード</h1>
           <p className="text-sm text-slate-500">全ユーザーのスコアデータ分析</p>
         </div>
-        <a
-          href="/api/admin/scores/export"
-          className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
-        >
-          CSVエクスポート
-        </a>
+        <div className="flex gap-2">
+          <a
+            href="/admin/sql"
+            className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+          >
+            SQL実行ツール
+          </a>
+          <a
+            href="/api/admin/scores/export"
+            className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+          >
+            CSVエクスポート
+          </a>
+        </div>
       </div>
 
       <section className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">

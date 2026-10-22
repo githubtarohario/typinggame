@@ -47,6 +47,7 @@ description:以下の仕様に従いタイピングゲームプログラムを�
   - 直近の記録一覧、CSVエクスポート(/api/admin/scores/export)
   - 本日のユーザー別実行回数(本日プレイしたユーザーごとの回数集計)
   - 日別データ削除(指定日付のscoresを全ユーザー分まとめて削除。件数確認→確認ダイアログ→削除の順で実行、/api/admin/scores/by-date)
+  - SQL実行ツール(/admin/sql): 本番DBに対し任意のSQLを直接実行できる。INSERT/UPDATE/DELETE/DROP等は実行前にブラウザ確認ダイアログを出す。複数文の一括実行は不可(Neonドライバの制約)
 - 管理者以外は /admin, /api/admin/* にアクセスするとリダイレクト/403になる
 
 
