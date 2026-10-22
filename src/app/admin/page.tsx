@@ -96,6 +96,10 @@ export default async function AdminPage() {
     playCount: d.playCount,
   }));
 
+  const dateSummaries = [...dailyTrendRaw]
+    .map((d) => ({ date: d.date, playCount: d.playCount }))
+    .reverse();
+
   return (
     <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -170,7 +174,7 @@ export default async function AdminPage() {
         <h2 className="mb-2 text-sm font-semibold text-slate-600">
           日別データ削除
         </h2>
-        <DeleteByDatePanel />
+        <DeleteByDatePanel dateSummaries={dateSummaries} />
       </section>
 
       <section className="mb-8 rounded-lg border border-slate-200 bg-white shadow-sm">
