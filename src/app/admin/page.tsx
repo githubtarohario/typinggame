@@ -12,7 +12,14 @@ function toNumber(v: unknown): number {
   return Number.isFinite(n) ? Math.round(n * 10) / 10 : 0;
 }
 
-export default async function AdminPage() {
+const RECENT_PAGE_SIZE = 20;
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { page } = await searchParams;
   const session = await getSession();
   const db = getDb();
 
@@ -79,6 +86,13 @@ export default async function AdminPage() {
     .groupBy(users.id)
     .orderBy(desc(count(scores.id)));
 
+  const totalPages = Math.max(Math.ceil(summary.totalPlays / RECENT_PAGE_SIZE), 1);
+  const requestedPage = parseInt(typeof page === "string" ? page : "1", 10);
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(requestedPage, 1), totalPages)
+    : 1;
+  const pageOffset = (currentPage - 1) * RECENT_PAGE_SIZE;
+
   const recentRows = await db
     .select({
       id: scores.id,
@@ -91,8 +105,9 @@ export default async function AdminPage() {
     })
     .from(scores)
     .innerJoin(users, eq(scores.userId, users.id))
-    .orderBy(desc(scores.playedAt))
-    .limit(100);
+    .orderBy(desc(scores.playedAt), desc(scores.id))
+    .limit(RECENT_PAGE_SIZE)
+    .offset(pageOffset);
 
   const chartData = dailyTrendRaw.map((d) => ({
     date: d.date,
@@ -253,9 +268,9 @@ export default async function AdminPage() {
         </table>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <section id="recent" className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <h2 className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600">
-          直近の記録(最新100件)
+          直近の記録(全{summary.totalPlays}件)
         </h2>
         <table className="w-full text-sm">
           <thead>
@@ -278,7 +293,7 @@ export default async function AdminPage() {
             )}
             {recentRows.map((r, i) => (
               <tr key={r.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-2 text-slate-400">{i + 1}</td>
+                <td className="px-4 py-2 text-slate-400">{pageOffset + i + 1}</td>
                 <td className="px-4 py-2">{new Date(r.playedAt).toLocaleString("ja-JP")}</td>
                 <td className="px-4 py-2">{r.displayName}</td>
                 <td className="px-4 py-2">{DIFFICULTY_LABELS[r.difficulty as Difficulty]}</td>
@@ -288,8 +303,74 @@ export default async function AdminPage() {
             ))}
           </tbody>
         </table>
+        {totalPages > 1 && (
+          <Pagination currentPage={currentPage} totalPages={totalPages} />
+        )}
       </section>
     </div>
+  );
+}
+
+function Pagination({
+  currentPage,
+  totalPages,
+}: {
+  currentPage: number;
+  totalPages: number;
+}) {
+  // 現在ページの前後2ページと先頭・末尾を表示し、間は「…」で省略する
+  const pages: (number | "gap")[] = [];
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2) {
+      pages.push(p);
+    } else if (pages[pages.length - 1] !== "gap") {
+      pages.push("gap");
+    }
+  }
+
+  const linkClass =
+    "rounded border border-slate-300 px-3 py-1 text-slate-600 hover:bg-slate-100";
+  const disabledClass =
+    "rounded border border-slate-200 px-3 py-1 text-slate-300";
+
+  return (
+    <nav className="flex flex-wrap items-center justify-center gap-1 border-t border-slate-200 px-4 py-3 text-sm">
+      {currentPage > 1 ? (
+        <a href={`?page=${currentPage - 1}#recent`} className={linkClass}>
+          前へ
+        </a>
+      ) : (
+        <span className={disabledClass}>前へ</span>
+      )}
+      {pages.map((p, i) =>
+        p === "gap" ? (
+          <span key={`gap-${i}`} className="px-2 text-slate-400">
+            …
+          </span>
+        ) : p === currentPage ? (
+          <span
+            key={p}
+            className="rounded bg-slate-800 px-3 py-1 font-semibold text-white"
+          >
+            {p}
+          </span>
+        ) : (
+          <a key={p} href={`?page=${p}#recent`} className={linkClass}>
+            {p}
+          </a>
+        ),
+      )}
+      {currentPage < totalPages ? (
+        <a href={`?page=${currentPage + 1}#recent`} className={linkClass}>
+          次へ
+        </a>
+      ) : (
+        <span className={disabledClass}>次へ</span>
+      )}
+      <span className="ml-2 text-xs text-slate-400">
+        {currentPage} / {totalPages} ページ
+      </span>
+    </nav>
   );
 }
 
