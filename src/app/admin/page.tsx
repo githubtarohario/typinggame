@@ -1,4 +1,4 @@
-import { eq, sql, desc, avg, count, gte } from "drizzle-orm";
+import { eq, sql, desc, avg, count, gte, max } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, scores } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
@@ -46,6 +46,7 @@ export default async function AdminPage() {
       playCount: count(scores.id),
       avgAccuracy: avg(scores.accuracy),
       avgWpm: avg(scores.wpm),
+      lastPlayedAt: max(scores.playedAt),
     })
     .from(users)
     .leftJoin(scores, eq(scores.userId, users.id))
@@ -221,6 +222,7 @@ export default async function AdminPage() {
               <th className="px-4 py-2 font-medium">プレイ回数</th>
               <th className="px-4 py-2 font-medium">平均正解率</th>
               <th className="px-4 py-2 font-medium">平均WPM</th>
+              <th className="px-4 py-2 font-medium">終了時間</th>
               <th className="px-4 py-2 font-medium">操作</th>
             </tr>
           </thead>
@@ -233,6 +235,11 @@ export default async function AdminPage() {
                 <td className="px-4 py-2">{u.playCount}</td>
                 <td className="px-4 py-2">{u.playCount > 0 ? `${toNumber(u.avgAccuracy)}%` : "-"}</td>
                 <td className="px-4 py-2">{u.playCount > 0 ? toNumber(u.avgWpm) : "-"}</td>
+                <td className="px-4 py-2 text-slate-500">
+                  {u.lastPlayedAt
+                    ? new Date(u.lastPlayedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
+                    : "-"}
+                </td>
                 <td className="px-4 py-2">
                   <DeleteUserButton
                     userId={u.userId}
