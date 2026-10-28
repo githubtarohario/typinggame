@@ -43,6 +43,21 @@ function pickWord(difficulty: Difficulty, exclude?: string): string {
   return word;
 }
 
+// IMEで確定された全角英数・記号を半角に揃える(「＜」→「<」など)
+function normalizeInput(text: string): string {
+  return text
+    .replace(/[！-～]/g, (ch) =>
+      String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
+    )
+    .replace(/　/g, " ")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'");
+}
+
+function isAscii(ch: string | null): boolean {
+  return ch !== null && ch.charCodeAt(0) < 0x80;
+}
+
 function getResultMessage(accuracy: number, wordsCompleted: number): string {
   if (wordsCompleted === 0) {
     return "まずは1つクリアしてみよう!落ち着いて入力してみてください";
@@ -65,8 +80,13 @@ export default function TypingGame() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [imeWarning, setImeWarning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<number>(0);
+  // 1回のイベントで複数文字が確定されることがあるため、最新値はrefでも持つ
+  const currentWordRef = useRef("");
+  const typedLengthRef = useRef(0);
+  const composingRef = useRef(false);
 
   useEffect(() => {
     if (state !== "playing" || timeLeft <= 0) return;
@@ -95,42 +115,86 @@ export default function TypingGame() {
   }, [state]);
 
   function startGame(level: Difficulty) {
+    const word = pickWord(level);
+    currentWordRef.current = word;
+    typedLengthRef.current = 0;
+    composingRef.current = false;
     setDifficulty(level);
-    setCurrentWord(pickWord(level));
+    setCurrentWord(word);
     setTypedLength(0);
     setCorrectCount(0);
     setMissCount(0);
     setWordsCompleted(0);
     setTimeLeft(DIFFICULTY_TIME_LIMIT[level]);
     setSaveError(null);
+    setImeWarning(false);
     setState("playing");
   }
 
+  // 入力された文字を1文字ずつ判定する。ミス入力は反映しない(お手つき防止)
+  function processChars(text: string) {
+    let word = currentWordRef.current;
+    let pos = typedLengthRef.current;
+    let correct = 0;
+    let miss = 0;
+    let completed = 0;
+
+    for (const ch of normalizeInput(text)) {
+      if (ch !== word[pos]) {
+        miss++;
+        continue;
+      }
+      correct++;
+      pos++;
+      if (pos === word.length) {
+        completed++;
+        word = pickWord(difficulty, word);
+        pos = 0;
+      }
+    }
+
+    currentWordRef.current = word;
+    typedLengthRef.current = pos;
+    setCurrentWord(word);
+    setTypedLength(pos);
+    if (correct) setCorrectCount((c) => c + correct);
+    if (miss) setMissCount((m) => m + miss);
+    if (completed) setWordsCompleted((w) => w + completed);
+  }
+
+  // 入力欄に確定済みの文字を取り出して判定する。取り出したら空にするので、
+  // ブラウザごとにcompositionend/inputの順序が違っても二重判定にならない
+  function flushInput() {
+    const el = inputRef.current;
+    if (!el || composingRef.current || el.value === "") return;
+    const text = el.value;
+    el.value = "";
+    processChars(text);
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    // IME変換中のキー入力は無視する(日本語入力がONのまま記号を打つとズレて
-    // フリーズしたように見えるため、変換確定前のイベントは処理しない)
+    // IME変換中のキーはここでは扱わず、確定後にflushInputで判定する
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     // 文字キー以外(Shift, Backspace, 矢印キー等)は無視
-    if (e.key.length !== 1) return;
+    if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
 
     e.preventDefault();
+    setImeWarning(false);
+    processChars(e.key);
+  }
 
-    const expectedChar = currentWord[typedLength];
-    if (e.key !== expectedChar) {
-      setMissCount((m) => m + 1);
-      return; // ミス入力は反映しない(お手つき防止)
+  function handleCompositionStart() {
+    composingRef.current = true;
+    // 英数記号を打つ場面で日本語入力がONになっていたら案内を出す
+    if (isAscii(currentWordRef.current[typedLengthRef.current] ?? null)) {
+      setImeWarning(true);
     }
+  }
 
-    setCorrectCount((c) => c + 1);
-    const nextLength = typedLength + 1;
-
-    if (nextLength === currentWord.length) {
-      setWordsCompleted((w) => w + 1);
-      setCurrentWord(pickWord(difficulty, currentWord));
-      setTypedLength(0);
-    } else {
-      setTypedLength(nextLength);
-    }
+  function handleCompositionEnd() {
+    composingRef.current = false;
+    // 確定文字が入力欄に反映されてから取り出す
+    setTimeout(flushInput, 0);
   }
 
   function refocusInput() {
@@ -296,15 +360,26 @@ export default function TypingGame() {
         </p>
       </div>
 
+      {nextChar !== null && !isAscii(nextChar) ? (
+        <p className="rounded bg-sky-50 px-4 py-2 text-sm text-sky-700">
+          日本語入力をONにして「{currentWord.slice(typedLength).match(/^[^\x00-\x7F]+/)?.[0]}」と入力し、Enterで確定してください
+        </p>
+      ) : (
+        imeWarning && (
+          <p className="rounded bg-amber-50 px-4 py-2 text-sm text-amber-700">
+            日本語入力がONになっています。半角英数に切り替えてください(半角/全角キー)
+          </p>
+        )
+      )}
+
       <input
         ref={inputRef}
         type="text"
-        value=""
-        onChange={() => {}}
+        defaultValue=""
         onKeyDown={handleKeyDown}
-        onCompositionEnd={(e) => {
-          e.currentTarget.value = "";
-        }}
+        onInput={flushInput}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
         onBlur={refocusInput}
         className="absolute h-0 w-0 opacity-0"
         autoFocus
